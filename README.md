@@ -455,13 +455,7 @@ From student_scores
 30. Rank students within their class, considering ties.
 
 ```sql
-CREATE TABLE student_scores (
-    student_id INT PRIMARY KEY,
-    student_name VARCHAR(50),
-    exam_date DATE,
-    score INT,
-    class VARCHAR(50)
-);
+
 
 
 Select *,
