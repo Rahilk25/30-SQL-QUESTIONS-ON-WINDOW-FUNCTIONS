@@ -217,18 +217,124 @@ Where amount > avg_sale
 
 
 
+--Rank students based on their scores for each exam.
+
+Select *,
+	rank() over(partition by exam_date order by scores desc) as rnk
+From student_scores 
+
+
+
+--Determine the dense rank of students based on their scores.
+
+Select *,
+	dense_rank() over(order by scores desc) as dense_rnk
+From student_scores
+
+
+--Calculate the score difference between the current and previous exam for each student
+
+
+Select *,
+	Lag() over(partition by student_name order by exam_date) as prev_exam_score,
+	score - Lag() over(partition by student_name order by exam_date) as diff
+From student_scores
+
+
+--List students who improved their score compared to the previous exam
+
+Select student_name, score, prev_exam_score
+From (
+	Select *,
+		Lag(score) over(partition by student_name order by exam_date) as prev_exam_score) a
+Where score > prev_exam_score
+Reset the rank for students after every 5 students based on their scores.
+--Determine the highest score for each class.
+
+With cte as (
+Select *,
+	row_number() over(partition by class order by score desc) as rw_no
+From student_scores)
+
+Select class,score
+From cte
+Where rw_no = 1
+
+
+--Reset the rank for students after every 5 students based on their scores.
 
 
 
 
+Select 
+	student_id,
+	student_name,
+	exam_date,
+	score,
+	class,
+	rank() over(partition by group order by score desc) as rnk
+From
+	(Select *,
+		(row_number() over(order by score desc) -1) / 5 as group
+	From student_scores) a
+
+--Show the count of students who improved their score compared to the previous exam.
+
+With cte as (
+Select *,
+	lag(score) over(partition by student_name order by exam_date) as prev_score
+From student_scores)
+	 
+Select count(student_name) as student_count 
+From cte 
+where prev_score < score
+
+
+--Find the percentage increase in scores for each student compared to their previous exam.
+
+With cte as (
+Select *,
+	lag(score) over(partition by student_name order by exam_date) as prev_score
+From student_scores)
+
+select 
+	student_id,
+	student_name,
+	exam_date,
+	score,
+	Round((score - prev_score)/prev_score * 100,2) || '%' as perc_diff
+From cte 
+
+
+--List all students with their scores and whether they improved from the last exam (yes/no).
+
+
+Select student_name, 
+	score,
+	lag(score) over(partition by student_name order by exam_date) as prev_score,
+	case
+		When score > lag(score) over(partition by student_name order by exam_date) then 'Yes'
+			Else 'No' 
+		End as improved_status
+From student_scores
 
 
 
+--Rank students within their class, considering ties.
 
 
+CREATE TABLE student_scores (
+    student_id INT PRIMARY KEY,
+    student_name VARCHAR(50),
+    exam_date DATE,
+    score INT,
+    class VARCHAR(50)
+);
 
 
-
+Select *,
+	rank() over(partition by class order by score desc) as rnk
+From student_scores
 
 
 
